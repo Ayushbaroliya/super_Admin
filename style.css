@@ -1,15 +1,15 @@
 :root {
-    --bg-primary: #0a0a0f;
-    --bg-secondary: #12121a;
-    --accent-primary: #6366f1;
-    --accent-secondary: #8b5cf6;
+    --bg-primary: #0a0a0c;
+    --bg-secondary: #131316;
+    --accent-primary: #06b6d4;
+    --accent-secondary: #10b981;
     --text-primary: #f8fafc;
     --text-secondary: #94a3b8;
     --success: #10b981;
     --danger: #ef4444;
     --border: rgba(255, 255, 255, 0.08);
-    --glass-bg: rgba(18, 18, 26, 0.6);
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    --glass-bg: rgba(19, 19, 22, 0.6);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -114,7 +114,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 4px 20px rgba(6, 182, 212, 0.3);
 }
 
 .logo-box i {
@@ -178,11 +178,11 @@ button {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
+    box-shadow: 0 4px 15px rgba(6, 182, 212, 0.2);
 }
 
 .primary-button:hover {
-    box-shadow: 0 6px 25px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 6px 25px rgba(6, 182, 212, 0.4);
     transform: translateY(-2px);
 }
 
@@ -243,7 +243,7 @@ button {
 
 .search-box:focus-within {
     border-color: var(--accent-primary);
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
 }
 
 /* Grid & Cards */
@@ -490,7 +490,7 @@ input:disabled + .slider {
 .input-with-icon input:focus {
     border-color: var(--accent-primary);
     outline: none;
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
 }
 
 .form-group small {

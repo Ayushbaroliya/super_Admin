@@ -26,6 +26,13 @@ const projectsGrid = document.getElementById('projectsGrid');
 const loadingState = document.getElementById('loadingState');
 const emptyState = document.getElementById('emptyState');
 
+// Add Project Elements
+const addProjectModal = document.getElementById('addProjectModal');
+const addProjectBtn = document.getElementById('addProjectBtn');
+const closeAddProjectBtn = document.getElementById('closeAddProjectBtn');
+const confirmAddProjectBtn = document.getElementById('confirmAddProjectBtn');
+const newProjectNameInput = document.getElementById('newProjectName');
+
 // Config Inputs
 const ghTokenInput = document.getElementById('ghToken');
 const ghOwnerInput = document.getElementById('ghOwner');
@@ -40,10 +47,19 @@ saveSettingsBtn.addEventListener('click', saveSettings);
 refreshBtn.addEventListener('click', fetchProjects);
 searchInput.addEventListener('input', renderProjects);
 
+if (addProjectBtn) addProjectBtn.addEventListener('click', openAddProject);
+if (closeAddProjectBtn) closeAddProjectBtn.addEventListener('click', closeAddProject);
+if (confirmAddProjectBtn) confirmAddProjectBtn.addEventListener('click', addNewProject);
+
 // Close modal on outside click
 modal.addEventListener('click', (e) => {
     if (e.target === modal) closeSettings();
 });
+if (addProjectModal) {
+    addProjectModal.addEventListener('click', (e) => {
+        if (e.target === addProjectModal) closeAddProject();
+    });
+}
 
 // --- Modal Functions ---
 function openSettings() {
@@ -79,6 +95,75 @@ function saveSettings() {
     closeSettings();
     showToast('Settings saved successfully', 'success');
     fetchProjects();
+}
+
+function openAddProject() {
+    newProjectNameInput.value = '';
+    addProjectModal.classList.remove('hidden');
+}
+
+function closeAddProject() {
+    addProjectModal.classList.add('hidden');
+}
+
+async function addNewProject() {
+    if (!projectsData || !currentFileSha) {
+        showToast('Please wait for projects to load first.', 'error');
+        return;
+    }
+
+    const newName = newProjectNameInput.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+    
+    if (!newName) {
+        showToast('Invalid project name. Use lowercase and underscores.', 'error');
+        return;
+    }
+    if (projectsData[newName]) {
+        showToast('Project already exists.', 'error');
+        return;
+    }
+
+    // Add to local state
+    projectsData[newName] = { isActive: true };
+    closeAddProject();
+    
+    // Show saving toast
+    showToast(`Adding ${formatName(newName)}...`, 'info');
+
+    try {
+        const updatedJsonString = JSON.stringify(projectsData, null, 2);
+        const encodedContent = btoa(unescape(encodeURIComponent(updatedJsonString)));
+
+        const response = await fetch(getApiUrl(), {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${config.token}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: `Add new project ${newName}`,
+                content: encodedContent,
+                sha: currentFileSha
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to update GitHub repository');
+        }
+
+        const data = await response.json();
+        currentFileSha = data.content.sha;
+        
+        showToast(`Project added successfully!`, 'success');
+        renderProjects();
+        
+    } catch (error) {
+        console.error(error);
+        showToast('Failed to add project.', 'error');
+        delete projectsData[newName]; // Revert
+        renderProjects();
+    }
 }
 
 // --- GitHub API Integration ---

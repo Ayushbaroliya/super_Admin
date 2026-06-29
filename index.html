@@ -40,10 +40,16 @@
                     <i data-lucide="search"></i>
                     <input type="text" id="searchInput" placeholder="Search projects...">
                 </div>
-                <button id="refreshBtn" class="primary-button">
-                    <i data-lucide="refresh-cw" id="refreshIcon"></i>
-                    Refresh Status
-                </button>
+                <div style="display: flex; gap: 1rem;">
+                    <button id="addProjectBtn" class="outline-button" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i data-lucide="plus"></i>
+                        Add Project
+                    </button>
+                    <button id="refreshBtn" class="primary-button">
+                        <i data-lucide="refresh-cw" id="refreshIcon"></i>
+                        Refresh Status
+                    </button>
+                </div>
             </div>
 
             <!-- Empty / Loading State -->
@@ -111,6 +117,31 @@
             </div>
             <div class="modal-footer">
                 <button id="saveSettingsBtn" class="primary-button full-width">Save & Connect</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Project Modal -->
+    <div id="addProjectModal" class="modal-overlay hidden">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2><i data-lucide="plus-circle"></i> Add New Project</h2>
+                <button id="closeAddProjectBtn" class="close-button"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-desc">Create a new project entry in your GitHub status file.</p>
+                
+                <div class="form-group">
+                    <label for="newProjectName">Project Key <span class="required">*</span></label>
+                    <div class="input-with-icon">
+                        <i data-lucide="folder-plus"></i>
+                        <input type="text" id="newProjectName" placeholder="e.g., jp_sir_app">
+                    </div>
+                    <small>Use lowercase letters and underscores (no spaces).</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="confirmAddProjectBtn" class="primary-button full-width">Add Project</button>
             </div>
         </div>
     </div>
