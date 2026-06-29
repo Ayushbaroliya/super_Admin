@@ -274,6 +274,59 @@ async function updateProjectStatus(projectId, newStatus) {
     }
 }
 
+async function deleteProject(projectId) {
+    if (!projectsData || !currentFileSha) return;
+    
+    if (!confirm(`Are you sure you want to delete ${formatName(projectId)}?`)) {
+        return;
+    }
+    
+    // Save backup just in case
+    const backupData = { ...projectsData };
+    
+    delete projectsData[projectId];
+    
+    showToast(`Deleting ${formatName(projectId)}...`, 'info');
+    renderProjects(); // Optimistic update
+    lucide.createIcons();
+    
+    try {
+        const updatedJsonString = JSON.stringify(projectsData, null, 2);
+        const encodedContent = btoa(unescape(encodeURIComponent(updatedJsonString)));
+
+        const response = await fetch(getApiUrl(), {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${config.token}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: `Delete project ${projectId}`,
+                content: encodedContent,
+                sha: currentFileSha
+            })
+        });
+
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(`GitHub Error: ${errData.message || 'Failed to delete'}`);
+        }
+
+        const data = await response.json();
+        currentFileSha = data.content.sha;
+        showToast('Project deleted successfully', 'success');
+        
+    } catch (error) {
+        console.error(error);
+        showToast(error.message || 'Failed to delete. Please refresh.', 'error');
+        // Revert
+        projectsData = backupData;
+        renderProjects();
+        lucide.createIcons();
+    }
+}
+
 // --- UI Rendering ---
 
 function renderProjects() {
@@ -310,21 +363,32 @@ function renderProjects() {
                     </div>
                 </div>
                 
-                <div class="card-footer">
-                    <span style="font-size: 0.9rem; color: var(--text-secondary)">App Access</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="toggle-${key}" ${isActive ? 'checked' : ''}>
-                        <span class="slider"></span>
-                    </label>
+                <div class="card-footer" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                    <button class="icon-button" id="delete-${key}" style="color: var(--danger); opacity: 0.8; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'" title="Delete Project">
+                        <i data-lucide="trash-2" style="width: 18px; height: 18px;"></i>
+                    </button>
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span style="font-size: 0.9rem; color: var(--text-secondary)">App Access</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggle-${key}" ${isActive ? 'checked' : ''}>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
                 </div>
             `;
 
             projectsGrid.appendChild(card);
 
-            // Add listener
+            // Add listener for toggle
             const toggle = card.querySelector(`#toggle-${key}`);
             toggle.addEventListener('change', (e) => {
                 updateProjectStatus(key, e.target.checked);
+            });
+            
+            // Add listener for delete
+            const deleteBtn = card.querySelector(`#delete-${key}`);
+            deleteBtn.addEventListener('click', () => {
+                deleteProject(key);
             });
         }
     });
