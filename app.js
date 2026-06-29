@@ -149,7 +149,8 @@ async function addNewProject() {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to update GitHub repository');
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(`GitHub Error: ${errData.message || 'Failed to update'}`);
         }
 
         const data = await response.json();
@@ -160,7 +161,7 @@ async function addNewProject() {
         
     } catch (error) {
         console.error(error);
-        showToast('Failed to add project.', 'error');
+        showToast(error.message || 'Failed to add project.', 'error');
         delete projectsData[newName]; // Revert
         renderProjects();
     }
@@ -250,7 +251,8 @@ async function updateProjectStatus(projectId, newStatus) {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to update GitHub repository');
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(`GitHub Error: ${errData.message || 'Failed to update'}`);
         }
 
         const data = await response.json();
@@ -261,7 +263,7 @@ async function updateProjectStatus(projectId, newStatus) {
         
     } catch (error) {
         console.error(error);
-        showToast('Failed to save changes. Please refresh.', 'error');
+        showToast(error.message || 'Failed to save changes. Please refresh.', 'error');
         // Revert optimistic update
         projectsData[projectId].isActive = !newStatus;
         if (toggleInput) {
