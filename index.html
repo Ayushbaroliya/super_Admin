@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin Control Center</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="background-effects">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+    </div>
+
+    <div class="app-container">
+        <header class="glass-header">
+            <div class="header-left">
+                <div class="logo-box">
+                    <i data-lucide="shield-check"></i>
+                </div>
+                <div>
+                    <h1 class="gradient-text">Super Admin Center</h1>
+                    <p class="subtitle">Global Access Management</p>
+                </div>
+            </div>
+            <button id="settingsBtn" class="icon-button" title="Settings">
+                <i data-lucide="settings"></i>
+            </button>
+        </header>
+
+        <main>
+            <div class="dashboard-controls">
+                <div class="search-box glass-panel">
+                    <i data-lucide="search"></i>
+                    <input type="text" id="searchInput" placeholder="Search projects...">
+                </div>
+                <button id="refreshBtn" class="primary-button">
+                    <i data-lucide="refresh-cw" id="refreshIcon"></i>
+                    Refresh Status
+                </button>
+            </div>
+
+            <!-- Empty / Loading State -->
+            <div id="loadingState" class="state-container hidden">
+                <div class="spinner"></div>
+                <p>Syncing with GitHub...</p>
+            </div>
+            
+            <div id="emptyState" class="state-container hidden">
+                <i data-lucide="layout-grid" class="empty-icon"></i>
+                <h3>No Projects Found</h3>
+                <p>Connect your GitHub repository to load projects.</p>
+                <button id="emptySettingsBtn" class="outline-button mt-4">Configure Settings</button>
+            </div>
+
+            <!-- Projects Grid -->
+            <div class="projects-grid" id="projectsGrid">
+                <!-- Project Cards injected via JS -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal-overlay hidden">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2><i data-lucide="github"></i> GitHub Configuration</h2>
+                <button id="closeSettingsBtn" class="close-button"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-desc">Configure the connection to your `status.json` file hosted on GitHub.</p>
+                
+                <div class="form-group">
+                    <label for="ghToken">Personal Access Token (PAT) <span class="required">*</span></label>
+                    <div class="input-with-icon">
+                        <i data-lucide="key"></i>
+                        <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+                    </div>
+                    <small>Needs 'repo' scope to update the JSON file.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="ghOwner">Repository Owner <span class="required">*</span></label>
+                    <div class="input-with-icon">
+                        <i data-lucide="user"></i>
+                        <input type="text" id="ghOwner" placeholder="e.g., your-username">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="ghRepo">Repository Name <span class="required">*</span></label>
+                    <div class="input-with-icon">
+                        <i data-lucide="folder-git-2"></i>
+                        <input type="text" id="ghRepo" placeholder="e.g., app-status-control">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="ghPath">File Path <span class="required">*</span></label>
+                    <div class="input-with-icon">
+                        <i data-lucide="file-json"></i>
+                        <input type="text" id="ghPath" placeholder="status.json" value="status.json">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="saveSettingsBtn" class="primary-button full-width">Save & Connect</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
