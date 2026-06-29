@@ -1,5 +1,8 @@
 {
   "my_first_app": {
     "isActive": true
+  },
+  "jp_sir_app": {
+    "isActive": true
   }
 }
