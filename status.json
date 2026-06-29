@@ -4,5 +4,11 @@
   },
   "bally_software": {
     "isActive": true
+  },
+  "mh_software": {
+    "isActive": true
+  },
+  "furniture_project": {
+    "isActive": true
   }
 }
