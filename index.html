@@ -141,6 +141,25 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="issueDate">Issue Date <span class="required">*</span></label>
+                    <div class="input-with-icon">
+                        <i data-lucide="calendar-clock"></i>
+                        <input type="date" id="issueDate">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="billingCycle">Billing Cycle</label>
+                    <div class="input-with-icon">
+                        <i data-lucide="repeat"></i>
+                        <select id="billingCycle" style="width: 100%; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--border); color: white; padding: 0.75rem 1rem 0.75rem 2.5rem; border-radius: 10px; font-family: 'Inter', sans-serif; appearance: none;">
+                            <option value="monthly">Monthly</option>
+                            <option value="yearly">Yearly</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
                     <label for="paymentReceipt">Payment Receipt Screenshot</label>
                     <div class="input-with-icon">
                         <i data-lucide="receipt"></i>

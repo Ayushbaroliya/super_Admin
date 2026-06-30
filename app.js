@@ -32,6 +32,8 @@ const addProjectBtn = document.getElementById('addProjectBtn');
 const closeAddProjectBtn = document.getElementById('closeAddProjectBtn');
 const confirmAddProjectBtn = document.getElementById('confirmAddProjectBtn');
 const newProjectNameInput = document.getElementById('newProjectName');
+const issueDateInput = document.getElementById('issueDate');
+const billingCycleInput = document.getElementById('billingCycle');
 const paymentReceiptInput = document.getElementById('paymentReceipt');
 const paymentDateInput = document.getElementById('paymentDate');
 
@@ -101,6 +103,8 @@ function saveSettings() {
 
 function openAddProject() {
     newProjectNameInput.value = '';
+    if (issueDateInput) issueDateInput.value = '';
+    if (billingCycleInput) billingCycleInput.value = 'monthly';
     if (paymentReceiptInput) paymentReceiptInput.value = '';
     if (paymentDateInput) paymentDateInput.value = '';
     addProjectModal.classList.remove('hidden');
@@ -179,6 +183,47 @@ async function uploadImageToGithub(file, projectId) {
     });
 }
 
+function calculateBillingStatus(issueDateStr, paymentDateStr, cycle = 'monthly') {
+    if (!issueDateStr) return { status: 'Unknown', nextDue: 'N/A' };
+    
+    const issueDate = new Date(issueDateStr);
+    const today = new Date();
+    
+    let nextDue = new Date(issueDate);
+    
+    if (cycle === 'yearly') {
+        while (nextDue <= today) {
+            nextDue.setFullYear(nextDue.getFullYear() + 1);
+        }
+    } else {
+        while (nextDue <= today) {
+            nextDue.setMonth(nextDue.getMonth() + 1);
+        }
+    }
+    
+    let currentPeriodStart = new Date(nextDue);
+    if (cycle === 'yearly') {
+        currentPeriodStart.setFullYear(currentPeriodStart.getFullYear() - 1);
+    } else {
+        currentPeriodStart.setMonth(currentPeriodStart.getMonth() - 1);
+    }
+    
+    if (!paymentDateStr) {
+        if (currentPeriodStart < today) return { status: 'Due', nextDue: currentPeriodStart.toISOString().split('T')[0] };
+        return { status: 'Paid', nextDue: nextDue.toISOString().split('T')[0] };
+    }
+    
+    const paymentDate = new Date(paymentDateStr);
+    
+    if (paymentDate < currentPeriodStart) {
+        return { status: 'Due', nextDue: currentPeriodStart.toISOString().split('T')[0] };
+    } else if (paymentDate >= nextDue) {
+        return { status: 'Advance', nextDue: nextDue.toISOString().split('T')[0] };
+    } else {
+        return { status: 'Paid', nextDue: nextDue.toISOString().split('T')[0] };
+    }
+}
+
 async function addNewProject() {
     if (!projectsData || !currentFileSha) {
         showToast('Please wait for projects to load first.', 'error');
@@ -187,9 +232,11 @@ async function addNewProject() {
 
     const newName = newProjectNameInput.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
     const paymentDate = paymentDateInput ? paymentDateInput.value : '';
+    const issueDate = issueDateInput ? issueDateInput.value : '';
+    const billingCycle = billingCycleInput ? billingCycleInput.value : 'monthly';
     
-    if (!newName) {
-        showToast('Invalid project name. Use lowercase and underscores.', 'error');
+    if (!newName || !issueDate) {
+        showToast('Project Key and Issue Date are required.', 'error');
         return;
     }
     if (projectsData[newName]) {
@@ -213,7 +260,7 @@ async function addNewProject() {
     }
 
     // Add to local state
-    projectsData[newName] = { isActive: true, paymentReceipt: paymentReceiptUrl, paymentDate };
+    projectsData[newName] = { isActive: true, paymentReceipt: paymentReceiptUrl, paymentDate, issueDate, billingCycle };
     closeAddProject();
 
     try {
@@ -298,7 +345,20 @@ async function fetchProjects() {
         projectsData = JSON.parse(jsonString);
 
         renderProjects();
-        showToast('Projects synced successfully', 'success');
+        
+        let dueCount = 0;
+        Object.values(projectsData).forEach(p => {
+            if (p.issueDate) {
+                const bInfo = calculateBillingStatus(p.issueDate, p.paymentDate, p.billingCycle);
+                if (bInfo.status === 'Due') dueCount++;
+            }
+        });
+        
+        if (dueCount > 0) {
+            showToast(`${dueCount} project(s) have Due payments!`, 'error');
+        } else {
+            showToast('Projects synced successfully', 'success');
+        }
         
     } catch (error) {
         console.error(error);
@@ -436,14 +496,22 @@ function renderProjects() {
             card.className = 'project-card glass-panel';
             
             const isActive = project.isActive;
+            const billingInfo = project.issueDate ? calculateBillingStatus(project.issueDate, project.paymentDate, project.billingCycle) : { status: 'Unknown' };
+            
+            let billingBadge = '';
+            if (billingInfo.status === 'Due') billingBadge = `<span class="billing-badge billing-due">Due</span>`;
+            else if (billingInfo.status === 'Paid') billingBadge = `<span class="billing-badge billing-paid">Paid</span>`;
+            else if (billingInfo.status === 'Advance') billingBadge = `<span class="billing-badge billing-advance">Advance</span>`;
+
             const receiptHtml = project.paymentReceipt ? `<div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.5rem;"><i data-lucide="receipt" style="width: 14px; height: 14px; display: inline-flex; vertical-align: middle;"></i> <a href="${project.paymentReceipt}" target="_blank" style="vertical-align: middle; margin-left: 4px; color: var(--accent-primary); text-decoration: none;">View Receipt</a></div>` : '';
-            const dateHtml = project.paymentDate ? `<div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;"><i data-lucide="calendar" style="width: 14px; height: 14px; display: inline-flex; vertical-align: middle;"></i> <span style="vertical-align: middle; margin-left: 4px;">${project.paymentDate}</span></div>` : '';
+            const dateHtml = project.paymentDate ? `<div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;"><i data-lucide="calendar" style="width: 14px; height: 14px; display: inline-flex; vertical-align: middle;"></i> <span style="vertical-align: middle; margin-left: 4px;">Last Paid: ${project.paymentDate}</span></div>` : '';
             
             card.innerHTML = `
                 <div class="card-header">
                     <div class="project-info">
-                        <h3>${formatName(key)}</h3>
+                        <h3>${formatName(key)} ${billingBadge}</h3>
                         <span class="project-key">${key}</span>
+                        ${project.issueDate ? `<div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;"><i data-lucide="calendar-clock" style="width: 14px; height: 14px; display: inline-flex; vertical-align: middle;"></i> <span style="vertical-align: middle; margin-left: 4px;">Issued: ${project.issueDate} (${project.billingCycle || 'monthly'})</span></div>` : ''}
                         ${receiptHtml}
                         ${dateHtml}
                     </div>
