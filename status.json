@@ -10,5 +10,8 @@
   },
   "furniture_project": {
     "isActive": true
+  },
+  "elite_software": {
+    "isActive": true
   }
 }
