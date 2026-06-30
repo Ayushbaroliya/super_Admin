@@ -32,6 +32,8 @@ const addProjectBtn = document.getElementById('addProjectBtn');
 const closeAddProjectBtn = document.getElementById('closeAddProjectBtn');
 const confirmAddProjectBtn = document.getElementById('confirmAddProjectBtn');
 const newProjectNameInput = document.getElementById('newProjectName');
+const paymentReceiptInput = document.getElementById('paymentReceipt');
+const paymentDateInput = document.getElementById('paymentDate');
 
 // Config Inputs
 const ghTokenInput = document.getElementById('ghToken');
@@ -99,11 +101,82 @@ function saveSettings() {
 
 function openAddProject() {
     newProjectNameInput.value = '';
+    if (paymentReceiptInput) paymentReceiptInput.value = '';
+    if (paymentDateInput) paymentDateInput.value = '';
     addProjectModal.classList.remove('hidden');
 }
 
 function closeAddProject() {
     addProjectModal.classList.add('hidden');
+}
+
+// --- File Upload ---
+async function uploadImageToGithub(file, projectId) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = async () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 800;
+                const MAX_HEIGHT = 800;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                const base64Content = dataUrl.split(',')[1];
+                const timestamp = new Date().getTime();
+                const filePath = `receipts/${projectId}_${timestamp}.jpg`;
+                const uploadUrl = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${filePath}`;
+
+                try {
+                    const response = await fetch(uploadUrl, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${config.token}`,
+                            'Accept': 'application/vnd.github.v3+json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message: `Upload receipt for ${projectId}`,
+                            content: base64Content
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.message || 'Upload failed');
+                    }
+
+                    const data = await response.json();
+                    resolve(data.content.download_url || `https://raw.githubusercontent.com/${config.owner}/${config.repo}/main/${filePath}`);
+                } catch (err) {
+                    reject(err);
+                }
+            };
+            img.onerror = () => reject(new Error('Failed to load image'));
+            img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+    });
 }
 
 async function addNewProject() {
@@ -113,6 +186,7 @@ async function addNewProject() {
     }
 
     const newName = newProjectNameInput.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+    const paymentDate = paymentDateInput ? paymentDateInput.value : '';
     
     if (!newName) {
         showToast('Invalid project name. Use lowercase and underscores.', 'error');
@@ -123,12 +197,24 @@ async function addNewProject() {
         return;
     }
 
-    // Add to local state
-    projectsData[newName] = { isActive: true };
-    closeAddProject();
-    
     // Show saving toast
     showToast(`Adding ${formatName(newName)}...`, 'info');
+    
+    let paymentReceiptUrl = '';
+    if (paymentReceiptInput && paymentReceiptInput.files.length > 0) {
+        showToast('Uploading receipt...', 'info');
+        try {
+            paymentReceiptUrl = await uploadImageToGithub(paymentReceiptInput.files[0], newName);
+        } catch (err) {
+            console.error(err);
+            showToast('Failed to upload receipt.', 'error');
+            return; // Abort if upload fails
+        }
+    }
+
+    // Add to local state
+    projectsData[newName] = { isActive: true, paymentReceipt: paymentReceiptUrl, paymentDate };
+    closeAddProject();
 
     try {
         const updatedJsonString = JSON.stringify(projectsData, null, 2);
@@ -350,12 +436,16 @@ function renderProjects() {
             card.className = 'project-card glass-panel';
             
             const isActive = project.isActive;
+            const receiptHtml = project.paymentReceipt ? `<div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.5rem;"><i data-lucide="receipt" style="width: 14px; height: 14px; display: inline-flex; vertical-align: middle;"></i> <a href="${project.paymentReceipt}" target="_blank" style="vertical-align: middle; margin-left: 4px; color: var(--accent-primary); text-decoration: none;">View Receipt</a></div>` : '';
+            const dateHtml = project.paymentDate ? `<div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;"><i data-lucide="calendar" style="width: 14px; height: 14px; display: inline-flex; vertical-align: middle;"></i> <span style="vertical-align: middle; margin-left: 4px;">${project.paymentDate}</span></div>` : '';
             
             card.innerHTML = `
                 <div class="card-header">
                     <div class="project-info">
                         <h3>${formatName(key)}</h3>
                         <span class="project-key">${key}</span>
+                        ${receiptHtml}
+                        ${dateHtml}
                     </div>
                     <div class="status-badge ${isActive ? 'active' : 'inactive'}">
                         <div class="status-dot"></div>
@@ -400,6 +490,8 @@ function renderProjects() {
             </div>
         `;
     }
+
+    lucide.createIcons();
 }
 
 function formatName(key) {
